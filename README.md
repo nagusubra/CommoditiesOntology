@@ -1,17 +1,10 @@
 # Commodities Ontology
 
----
-
-> **Tags:** `commodities` `ontology` `decision-intelligence` `databricks` `market-data` `scalable-architecture` `energy-markets` `trading` `AI` `signal-extraction`
-
----
-
-> **Scalable Architecture:**
-> This project is designed with a scalable, modular architecture. The Medallion architecture enables easy expansion, integration, and adaptation to new data sources, analytics, and AI-driven workflows. The pipeline supports large volumes of market data and can be extended for additional commodities, geographies, and trading strategies.
-
----
-
 ## Demo
+
+[![Commodities Ontology Demo](https://img.youtube.com/vi/u-DbKSHB2wQ/0.jpg)](https://www.youtube.com/watch?v=u-DbKSHB2wQ)
+
+> Watch the full walkthrough on YouTube: [https://www.youtube.com/watch?v=u-DbKSHB2wQ](https://www.youtube.com/watch?v=u-DbKSHB2wQ)
 
 ![Databricks Genie space for Commodities Ontology](Databricks%20Genie%20space%20for%20Commodities%20Ontology.png)
 ![Medallion architecture overview](Medallion%20architecture%20overview.png)
@@ -82,6 +75,16 @@ This repository builds on top of the Petrinex data from [Calgary_Hackathon_Data_
 
 ---
 
+> **Tags:** `commodities` `ontology` `decision-intelligence` `databricks` `market-data` `scalable-architecture` `energy-markets` `trading` `AI` `signal-extraction`
+
+---
+
+> **Scalable Architecture:**
+> This project is designed with a scalable, modular architecture. The Medallion architecture enables easy expansion, integration, and adaptation to new data sources, analytics, and AI-driven workflows. The pipeline supports large volumes of market data and can be extended for additional commodities, geographies, and trading strategies.
+
+---
+
+
 
 ## Quick Start
 
@@ -98,23 +101,64 @@ That's it. All 8 tables + PDFs will be created in your Unity Catalog.
 
 ## Commodities Market Data Pipeline
 
-Once the Petrinex data is loaded via the notebook, you can use the Commodities Market Data Pipeline for advanced analytics and decision intelligence:
+Once the Petrinex data is loaded via the notebook, you can use the Commodities Market Data Pipeline for advanced analytics and decision intelligence.
 
-### How to Use
-1. Ensure the base data is loaded (see Quick Start above).
-2. Navigate to `Commodities Market Data Pipeline/transformations/`.
-3. Run the transformation scripts for bronze, silver, and gold datasets:
-        - `bronze/bronze_market_data.py`
-        - `silver/silver_market_data.py`
-        - `gold/gold_market_summary.py`
-4. The pipeline processes raw market data, extracts signals, and links context for decision framing.
-5. Use the output CSVs in `Commodities Market Data Pipeline/data/` for downstream analytics, dashboards, or AI-driven trading strategies.
+### Prerequisites
+
+Before running the pipeline, ensure you have:
+
+| Requirement | Details |
+|---|---|
+| Databricks workspace | With Unity Catalog enabled |
+| Catalog & schema | `hackathon` catalog, `market_agents` schema (or update the table references in each script) |
+| Databricks AI Functions | `ai_extract` and `ai_query` must be available in your region |
+| Databricks Pipelines (DLT) | Required to execute the `@dp.materialized_view` decorated scripts |
+| Serverless compute | Recommended for fastest setup; any DLT-compatible cluster works |
+
+### Installation
+
+1. **Import this repository** into your Databricks workspace via Git integration:
+   - Go to **Workspace → Repos → Add Repo**
+   - Paste the repo URL and click **Create**
+
+2. **Create the Unity Catalog schema** (if it does not already exist):
+   ```sql
+   CREATE CATALOG IF NOT EXISTS hackathon;
+   CREATE SCHEMA IF NOT EXISTS hackathon.market_agents;
+   ```
+
+3. **Create a Databricks Pipeline** for each transformation layer:
+   - Go to **Workflows → Delta Live Tables → Create Pipeline**
+   - Set the source to the script path (e.g., `Commodities Market Data Pipeline/transformations/bronze/bronze_market_data.py`)
+   - Set the target schema to `hackathon.market_agents`
+   - Use **Serverless** compute
+   - Repeat for silver and gold scripts
+
+4. **Run the pipelines in order:**
+   ```
+   bronze_market_data.py   →   silver_market_data.py   →   gold_market_summary.py
+   ```
+
+### How It Works
+
+| Layer | Script | Output Table | Description |
+|---|---|---|---|
+| **Bronze** | `bronze/bronze_market_data.py` | `hackathon.market_agents.bronze_market_data` | Ingests raw market news articles (text, URL, published date) via MCP search queries spanning Jan 2025 – Mar 2026 |
+| **Silver** | `silver/silver_market_data.py` | `hackathon.market_agents.silver_market_data` | Uses `ai_extract` to parse commodity, price, sentiment, and headline from raw text; filters to oil & gas articles; adds a per-article trading recommendation via `ai_query` |
+| **Gold** | `gold/gold_market_summary.py` | `hackathon.market_agents.gold_market_summary` | Aggregates silver data by commodity and date; computes sentiment counts and overall trading recommendation using `databricks-meta-llama-3-3-70b-instruct` |
+
+### Output CSVs
+
+Pre-generated output files are included in `Commodities Market Data Pipeline/data/` for reference:
+- `bronze_market_data.csv` — Raw ingested articles
+- `silver_market_data.csv` — Structured, AI-enriched articles
+- `gold_market_summary.csv` — Aggregated daily commodity sentiment and recommendations
 
 ### Example Workflow
-- Load Petrinex data using the notebook.
-- Run pipeline scripts to transform and enrich market data.
-- Analyze the resulting datasets for signal extraction, context linking, and decision framing.
-- Integrate with Genie space or other AI tools for real-time decision intelligence.
+1. Load Petrinex data using `notebooks/01_setup_data` (see Quick Start above).
+2. Run the three pipeline scripts in order (bronze → silver → gold).
+3. Analyze the resulting Delta tables or CSVs for signal extraction, context linking, and decision framing.
+4. Integrate with Genie Space or a Knowledge Assistant for real-time decision intelligence.
 
 ---
 
